@@ -16,11 +16,7 @@
 #define TELNET_PORT         23
 #define GPIO_INTERCOM_PIN   GPIO_NUM_6
 
-// Pulse timings in microseconds
-#define PULSE_THRESHOLD_SHORT 1000    // Short pulse threshold in microseconds
-#define PULSE_THRESHOLD_LONG 3000    // Long pulse threshold in microseconds
-
-static const char *TAG = "TELNET_LOG";
+static const char *TAG = "ESP32C3";
 static int client_sock = -1;
 static int server_sock = -1;
 
@@ -114,6 +110,7 @@ void gpio_intercom_task(void *pvParameters) {
     int pulse_start_time = 0;
     int pulse_width = 0;
     ESP_LOGI(TAG, "started listening to intercom");
+    ESP_LOGI(TAG, "state %d", gpio_get_level(GPIO_INTERCOM_PIN));
 
     while (1) {
         int current_state = gpio_get_level(GPIO_INTERCOM_PIN);
@@ -128,18 +125,8 @@ void gpio_intercom_task(void *pvParameters) {
             } else {
                 // End of pulse
                 pulse_width = esp_timer_get_time() - pulse_start_time;  // Calculate pulse width
-
-                // Decode the pulse based on its width
-                if (pulse_width < PULSE_THRESHOLD_SHORT) {
-                    ESP_LOGI(TAG, "Short pulse detected: %d us", pulse_width);
-                    // Handle short pulse (e.g., "0" bit or special message)
-                } else if (pulse_width >= PULSE_THRESHOLD_SHORT && pulse_width < PULSE_THRESHOLD_LONG) {
-                    ESP_LOGI(TAG, "Medium pulse detected: %d us", pulse_width);
-                    // Handle medium pulse (e.g., "1" bit or special message)
-                } else {
-                    ESP_LOGI(TAG, "Long pulse detected: %d us", pulse_width);
-                    // Handle long pulse (e.g., start/end of message)
-                }
+                pulse_width /= 1000;  // Convert to milliseconds
+                ESP_LOGI(TAG, "Pulse width: %d ms", pulse_width);
             }
             last_state = current_state;
         }
